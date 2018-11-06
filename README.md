@@ -1,5 +1,5 @@
 对AFNetwork的二次封装 
-实现请求取消、重复请求处理、请求缓存等功能
+实现【页面请求取消】、【重复请求处理】、【请求缓存必达】等功能
 
 ```
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
