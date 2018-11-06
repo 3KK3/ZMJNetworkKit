@@ -8,11 +8,14 @@
 
 #import <Foundation/Foundation.h>
 #import "ZMJRequestDefine.h"
+@class AFHTTPRequestSerializer;
+@class AFHTTPResponseSerializer;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface ZMJHttpRequestServer : NSObject
-
+@property (nonatomic, strong) AFHTTPRequestSerializer *requestSerializer;
+@property (nonatomic, strong) AFHTTPResponseSerializer *responseSerializer;
 + (instancetype)sharedInstance;
 
 // 监听网络状态，判断是否有网
@@ -21,9 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  *  HTTP请求（GET、POST、DELETE、PUT）
  */
-
 - (NSURLSessionDataTask *)requestWithPath:(NSString *)url method:(ZMJRequestType)method parameters:(id)parameters success:(void(^)(NSURLSessionDataTask *task,id responseObject))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
-
 
 /**
  *  HTTP请求（HEAD）
@@ -32,9 +33,6 @@ NS_ASSUME_NONNULL_BEGIN
                    parameters:(NSDictionary *)parameters
                       success:(void (^)(NSURLSessionDataTask *task))success
                       failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure;
-
-
-
 /**
  *  图片上传方法
  *

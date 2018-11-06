@@ -38,11 +38,8 @@ static ZMJRequestCache *_instance = nil;
 }
 
 - (NSArray <ZMJRequest *>*)allCachedRequests {
+    // TODO:
     return @[];
-}
-
-- (BOOL)cacheRequest:(ZMJRequest *)request {
-    return YES;
 }
 
 - (void)saveData:(NSData *)data ForKey:(NSString *)key {
@@ -57,6 +54,32 @@ static ZMJRequestCache *_instance = nil;
         [mgr removeItemAtPath:path error:nil];
     }
     [data writeToFile:path atomically:YES];
+}
+
++ (NSData *)readDataFromFileByUrl:(NSString *)url {
+    NSString *md5 = [url MD5Hash];
+    NSString *dir = [NSHomeDirectory() stringByAppendingFormat:@"%@",@"/Library/Caches"];
+    NSString *path = [NSString stringWithFormat:@"%@/%@",dir,md5];
+    return [NSData dataWithContentsOfFile:path];
+}
+
+- (void)saveRequestToDB:(ZMJRequest *)request {
+    // TODO:
+}
+
+- (void)deleteRequestFromDBWhere:(id)requestID {
+    // TODO:
+}
+
++ (void)saveValue:(id)value forKey:(NSString *)key {
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:value forKey:key];
+    [userDefaults synchronize];
+}
+
++ (id)valueWithKey:(NSString *)key {
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    return [userDefaults objectForKey:key];
 }
 
 @end

@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 #import "ZMJRequestDefine.h"
+@class AFHTTPRequestSerializer;
+@class AFHTTPResponseSerializer;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -58,9 +60,6 @@ typedef NS_ENUM(NSInteger, ZMJRequestSamePolicy){
 // 请求没发送成功，重新发送的次数 默认三次
 @property (nonatomic, assign) NSInteger retryCount;
 
-// 是否需要及时取消 默认NO
-@property (nonatomic, assign) BOOL canCancel;
-
 // 上传的文件
 @property (nonatomic, strong) NSData *uploadData;
 
@@ -69,6 +68,9 @@ typedef NS_ENUM(NSInteger, ZMJRequestSamePolicy){
 
 // 存到服务器中的文件名，不能为空
 @property (nonatomic, copy) NSString *serverFileNamel;
+
+@property (nonatomic, strong) AFHTTPRequestSerializer *requestSerializer;
+@property (nonatomic, strong) AFHTTPResponseSerializer *responseSerializer;
 
 - (void)reduceRetryCount;
 

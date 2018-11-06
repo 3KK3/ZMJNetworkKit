@@ -61,9 +61,30 @@ static const int _maxRequestConcurrentNum = 3;
 }
 
 - (void)sendRequest:(ZMJRequest *)request successBlock:(SuccessBlock)successBlock failedBlock:(FailedBlock)failedBlock {
-    if (ZMJRequestRetryPolicyStoreToDB == request.retryPolicy) {
-        [[ZMJRequestCache sharedInstance] cacheRequest: request];
+    
+    switch (request.samePolicy) {
+        case ZMJRequestSamePolicyIgnoreCurrent: {
+            
+            NSURLSessionDataTask *task = [self.taskDic objectForKey: request.requestId];
+            if (task) {
+                return;
+            }
+        }
+            break;
+        case ZMJRequestSamePolicyIgnoreLast: {
+            
+            NSURLSessionDataTask *task = [self.taskDic objectForKey: request.requestId];
+            if (NSURLSessionTaskStateRunning == task.state || NSURLSessionTaskStateSuspended == task.state) {
+                [task cancel];
+            }
+        }
+            break;
     }
+    
+    if (ZMJRequestRetryPolicyStoreToDB == request.retryPolicy) {
+        [[ZMJRequestCache sharedInstance] saveRequestToDB: request];
+    }
+    
     [self queueAddRequest: request successBlock: successBlock failedBlock: failedBlock];
 }
 
@@ -72,35 +93,14 @@ static const int _maxRequestConcurrentNum = 3;
         return;
     }
     
+    if ([self.requestArray containsObject: request]) {
+        return ;
+    }
+
     dispatch_async(self.addRuquestQueue, ^{
-        
-        if ([self.requestArray containsObject: request]) {
-            return ;
-        }
-        
-//        switch (request.samePolicy) {
-//            case ZYSameRequestPolicyCurrent: {
-//
-//                NSURLSessionDataTask *task = [self.taskDic objectForKey: [self requestMD5WithRequest: request]];
-//                if (task) {
-//                    continue;
-//                }
-//            }
-//                break;
-//            case ZYSameRequestPolicyIgnoreLast: {
-//                NSURLSessionDataTask *task = [self.taskDic objectForKey: [self requestMD5WithRequest: request]];
-//                if (NSURLSessionTaskStateRunning == task.state || NSURLSessionTaskStateSuspended == task.state) {
-//                    [task cancel];
-//                }
-//            }
-//                break;
-//        }
-        
-        
         [self.requestArray addObject: request];
         [self.successBlockArray addObject: successBlock];
         [self.failedBlockArray addObject: failedBlock];
-        
         [self dealRequestQueue];
     });
 }
@@ -112,12 +112,16 @@ static const int _maxRequestConcurrentNum = 3;
     while (self.requestArray.count > 0) {
 
         dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
-        //利用AFN发送请求
         
         ZMJRequest *request = self.requestArray.firstObject;
         SuccessBlock successBlock = self.successBlockArray.firstObject;
         FailedBlock failedBlock = self.failedBlockArray.firstObject;
         [self queueRemoveObjAtIndex: 0];
+        
+        // 利用AFN发送请求
+        [ZMJHttpRequestServer sharedInstance].responseSerializer = request.responseSerializer;
+        [ZMJHttpRequestServer sharedInstance].requestSerializer = request.requestSerializer;
+        
         NSURLSessionDataTask *task = nil;
         
         switch (request.method) {
@@ -129,7 +133,7 @@ static const int _maxRequestConcurrentNum = 3;
                 task = [[ZMJHttpRequestServer sharedInstance] requestWithPath: request.urlStr method:request.method parameters:request.params success:^(NSURLSessionDataTask * _Nonnull task, id  _Nonnull responseObject) {
                     
                     dispatch_semaphore_signal(self.semaphore);
-                    [self.taskDic removeObjectForKey: [self requestMD5String: request]];
+                    [self.taskDic removeObjectForKey: request.requestId];
 
                     if (request.cacheKey) {
                         NSError *error = nil;
@@ -142,7 +146,7 @@ static const int _maxRequestConcurrentNum = 3;
                     
                     //在成功的时候移除数据库中的缓存
                     if (request.retryPolicy == ZMJRequestRetryPolicyStoreToDB) {
-                        [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request.requestId];
+                        [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request];
                     }
                     successBlock(responseObject);
                 } failure:^(NSURLSessionDataTask * _Nonnull task, NSError * _Nonnull error) {
@@ -155,7 +159,7 @@ static const int _maxRequestConcurrentNum = 3;
                         [self queueAddRequest: request successBlock: successBlock failedBlock: failedBlock];
                         [self dealRequestQueue];
                     } else {  //处理错误信息
-                        [self.taskDic removeObjectForKey: [self requestMD5String: request]];
+                        [self.taskDic removeObjectForKey: request.requestId];
                         failedBlock(error);
                     }
                 }];
@@ -163,14 +167,15 @@ static const int _maxRequestConcurrentNum = 3;
                 break;
             
             case ZMJRequestTypeHead: {
+                
                 task = [[ZMJHttpRequestServer sharedInstance] requestWithPathInHEAD: request.urlStr parameters:request.params success:^(NSURLSessionDataTask * _Nonnull task) {
                     
                     dispatch_semaphore_signal(self.semaphore);
-                    [self.taskDic removeObjectForKey: [self requestMD5String: request]];
+                    [self.taskDic removeObjectForKey: request.requestId];
                     
                     //在成功的时候移除数据库中的缓存
                     if (request.retryPolicy == ZMJRequestRetryPolicyStoreToDB) {
-                        [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request.requestId];
+                        [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request];
                     }
                     successBlock(task);
                 } failure:^(NSURLSessionDataTask * _Nonnull task, NSError * _Nonnull error) {
@@ -183,7 +188,7 @@ static const int _maxRequestConcurrentNum = 3;
                         [self queueAddRequest: request successBlock: successBlock failedBlock: failedBlock];
                         [self dealRequestQueue];
                     } else {  //处理错误信息
-                        [self.taskDic removeObjectForKey: [self requestMD5String: request]];
+                        [self.taskDic removeObjectForKey: request.requestId];
                         failedBlock(error);
                     }
                 }];
@@ -191,14 +196,15 @@ static const int _maxRequestConcurrentNum = 3;
                 break;
 
             case ZMJRequestTypeUpload: {
+                
                 task = [[ZMJHttpRequestServer sharedInstance] uploadWithURL: request.urlStr parameters:request.params data:request.uploadData name:request.serverName fileName:request.serverFileNamel success:^(id  _Nonnull responseObject) {
                     
                     dispatch_semaphore_signal(self.semaphore);
-                    [self.taskDic removeObjectForKey: [self requestMD5String: request]];
-                    
+                    [self.taskDic removeObjectForKey: request.requestId];
+
                     //在成功的时候移除数据库中的缓存
                     if (request.retryPolicy == ZMJRequestRetryPolicyStoreToDB) {
-                        [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request.requestId];
+                        [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request];
                     }
                     successBlock(task);
                     
@@ -213,7 +219,7 @@ static const int _maxRequestConcurrentNum = 3;
                         [self queueAddRequest: request successBlock: successBlock failedBlock: failedBlock];
                         [self dealRequestQueue];
                     } else {  //处理错误信息
-                        [self.taskDic removeObjectForKey: [self requestMD5String: request]];
+                        [self.taskDic removeObjectForKey: request.requestId];
                         failedBlock(error);
                     }
                 }];
@@ -221,19 +227,17 @@ static const int _maxRequestConcurrentNum = 3;
                 break;
         }
         
-        [self.taskDic setObject: task forKey: [self requestMD5String: request]];
+        [self.taskDic setObject: task forKey: request.requestId];
     }
-}
-
-- (NSString *)requestMD5String:(ZMJRequest *)request {
-    return [[NSString stringWithFormat: @"%@%@",request.urlStr, request.params] MD5Hash];
 }
 
 - (void)queueRemoveObjAtIndex:(NSInteger)index {
     if (self.requestArray.count > index) {
-        [self.requestArray removeObjectAtIndex:index];
-        [self.successBlockArray removeObjectAtIndex:index];
-        [self.failedBlockArray removeObjectAtIndex:index];
+        dispatch_async(self.addRuquestQueue, ^{
+            [self.requestArray removeObjectAtIndex:index];
+            [self.successBlockArray removeObjectAtIndex:index];
+            [self.failedBlockArray removeObjectAtIndex:index];
+        });
     }
 }
 
@@ -255,21 +259,19 @@ static const int _maxRequestConcurrentNum = 3;
     }
 }
 
-- (void)cancelRequests:(NSArray<ZMJRequest *> *)requests {
-    NSInteger i = 0;
-    for (ZMJRequest *request in requests) {
-        if (request.canCancel) {
-            [self queueRemoveObjAtIndex: i];
-            NSURLSessionDataTask *task = [self.taskDic objectForKey: [self requestMD5String: request]];
+- (void)cancelRequest:(ZMJRequest *)request {
+    for (NSInteger j = 0; j < self.requestArray.count; j ++) {
+        
+        ZMJRequest *itemRequest = self.requestArray[j];
+        
+        if ([request.requestId isEqualToString: itemRequest.requestId]) {
+            
+            [self queueRemoveObjAtIndex: j];
+            NSURLSessionDataTask *task = [self.taskDic objectForKey: request.requestId];
             if (NSURLSessionTaskStateRunning == task.state || NSURLSessionTaskStateSuspended == task.state) {
                 [task cancel];
             }
-            //在成功的时候移除realm数据库中的缓存
-            if (request.retryPolicy == ZMJRequestRetryPolicyStoreToDB) {
-                [[ZMJRequestCache sharedInstance] deleteRequestFromDBWhere: request.requestId];
-            }
         }
-        i ++;
     }
 }
 

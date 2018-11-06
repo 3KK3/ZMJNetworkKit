@@ -49,6 +49,7 @@
 		4A60D6AC7338556340FD622A /* libPods-ZMJNetworkDemo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ZMJNetworkDemo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E0DF51DEFAB2A5B6946EE27 /* libPods-ZMJNetworkDemoUITests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ZMJNetworkDemoUITests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		57EE339F023B0B0A04603948 /* Pods-ZMJNetworkDemoUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZMJNetworkDemoUITests.release.xcconfig"; path = "Pods/Target Support Files/Pods-ZMJNetworkDemoUITests/Pods-ZMJNetworkDemoUITests.release.xcconfig"; sourceTree = "<group>"; };
+		5B211B4A21918220003E3F0C /* ZMJNetwork.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZMJNetwork.h; sourceTree = "<group>"; };
 		5B422A092170A7CF00551D95 /* ZMJNetworkDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZMJNetworkDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B422A0C2170A7CF00551D95 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5B422A0D2170A7CF00551D95 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -180,6 +181,7 @@
 				5B422A412170A86300551D95 /* NSString+MD5.h */,
 				5B422A452170A86300551D95 /* NSString+MD5.m */,
 				5B422A472170A86300551D95 /* ZMJRequestDefine.h */,
+				5B211B4A21918220003E3F0C /* ZMJNetwork.h */,
 			);
 			path = ZMJNetworkKit;
 			sourceTree = "<group>";

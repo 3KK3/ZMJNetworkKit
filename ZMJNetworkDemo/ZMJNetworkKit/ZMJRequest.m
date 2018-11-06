@@ -7,6 +7,8 @@
 
 #import "ZMJRequest.h"
 #import "NSString+MD5.h"
+#import <AFNetworking.h>
+#import "ZMJRequestCache.h"
 
 @interface ZMJRequest ()
 @property (nonatomic, copy, readwrite) NSString *requestId;
@@ -16,13 +18,28 @@
 
 - (instancetype)init {
     if (self = [super init]) {
+        
         self.retryCount = 3;
         self.retryPolicy = ZMJRequestRetryPolicyNormal;
         self.method = ZMJRequestTypeGet;
         self.cacheKey = self.cacheKey;
         self.samePolicy = ZMJRequestSamePolicyIgnoreLast;
+        self.requestSerializer = [AFHTTPRequestSerializer serializer];
+        self.responseSerializer = [AFJSONResponseSerializer serializer];
+        self.requestId = [self generateReqeustID];
     }
     return self;
+}
+
+- (NSString *)generateReqeustID {
+    static NSString *const requestKey = @"ZMJGenerateReqeustID";
+    
+    NSString *ID = [ZMJRequestCache valueWithKey: requestKey];
+    NSInteger intID = [ID integerValue];
+    intID ++;
+    NSString *newID = [NSString stringWithFormat: @"%ld", intID];
+    [ZMJRequestCache setValue: newID forKey: requestKey];
+    return newID;
 }
 
 - (id)copyWithZone:(NSZone *)zone {
@@ -35,7 +52,6 @@
     request.cacheKey = self.cacheKey;
     request.retryCount = self.retryCount;
     request.samePolicy = self.samePolicy;
-    request.canCancel = self.canCancel;
     return request;
 }
 
@@ -45,12 +61,6 @@
 
 - (void)setParams:(NSDictionary *)params {
     _params = params;
-}
-
-- (void)resetRequestID {
-    if (self.urlStr.length && self.params.allValues.count) {
-        self.requestId = [[NSString stringWithFormat: @"%@%@",self.urlStr, self.params] MD5Hash];
-    }
 }
 
 - (void)setRetryPolicy:(ZMJRequestRetryPolicy)retryPolicy {

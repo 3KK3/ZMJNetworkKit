@@ -35,10 +35,7 @@ static ZMJHttpRequestServer *_instance = nil;
 
 - (void)initAFMamager {
     self.manager = [AFHTTPSessionManager manager];
-    //请求参数序列化类型
-    self.manager.requestSerializer = [AFHTTPRequestSerializer serializer];
-    //响应结果序列化类型
-    self.manager.responseSerializer = [AFJSONResponseSerializer serializer];
+
     //接受内容类型
     self.manager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"text/html",@"text/plain",@"text/json",@"application/json", nil];
     
@@ -98,8 +95,10 @@ static ZMJHttpRequestServer *_instance = nil;
                                parameters:(id)parameters
                                   success:(void (^)(NSURLSessionDataTask *, id))success
                                   failure:(void (^)(NSURLSessionDataTask *, NSError *))failure {
- 
     
+    self.manager.requestSerializer = self.requestSerializer;
+    self.manager.responseSerializer = self.responseSerializer;
+ 
     switch (method) {
         case ZMJRequestTypeGet: {
             return [self.manager GET:url parameters:parameters progress:nil success:success failure:failure];
@@ -129,6 +128,9 @@ static ZMJHttpRequestServer *_instance = nil;
                       success:(void (^)(NSURLSessionDataTask *task))success
                       failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure {
     
+    self.manager.requestSerializer = self.requestSerializer;
+    self.manager.responseSerializer = self.responseSerializer;
+    
    return [self.manager HEAD:url parameters:parameters success:success failure:failure];
 }
 
@@ -140,6 +142,9 @@ static ZMJHttpRequestServer *_instance = nil;
              fileName:(NSString *)fileName
               success:(void (^)(id _Nonnull))success
               failure:(void (^)(NSError * _Nonnull))failure {
+    
+    self.manager.requestSerializer = self.requestSerializer;
+    self.manager.responseSerializer = self.responseSerializer;
     
     //AFN的上传data
     return [self.manager POST:URL parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {

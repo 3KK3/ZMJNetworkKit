@@ -21,7 +21,7 @@ typedef void (^FailedBlock)(NSError *error);
 
 - (void)sendRequest:(ZMJRequest *)request successBlock:(SuccessBlock)successBlock failedBlock:(FailedBlock)failedBlock;
 
-- (void)cancelRequests:(NSArray <ZMJRequest *>*)requests;
+- (void)cancelRequest:(ZMJRequest *)request;
 
 @end
 

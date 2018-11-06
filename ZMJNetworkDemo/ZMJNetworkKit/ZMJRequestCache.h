@@ -17,13 +17,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSArray <ZMJRequest *>*)allCachedRequests;
 
-- (BOOL)cacheRequest:(ZMJRequest *)request;
-
-//将data存入沙盒路径
+// 将请求到的data存入沙盒路径
 - (void)saveData:(NSData *)data ForKey:(NSString *)key;
+// 读取缓存到的数据
++ (NSData *)readDataFromFileByUrl:(NSString *)url;
 
-- (void)deleteRequestFromDBWhere:(NSString *)predicateStr;
+// 删除缓存的请求
+- (void)deleteRequestFromDBWhere:(ZMJRequest *)request;
+// 缓存请求
 - (void)saveRequestToDB:(ZMJRequest *)request;
+
++ (void)saveValue:(id)value forKey:(NSString *)key;
++ (id)valueWithKey:(NSString *)key;
 
 @end
 
